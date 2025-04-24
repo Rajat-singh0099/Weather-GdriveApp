@@ -1,0 +1,75 @@
+<template>
+    <div class="custom-card-container">
+        <lightning-card title="Weather App" icon-name="utility:world">
+            <lightning-layout vertical-align="center" class="slds-p-around_medium centered-content">
+                <lightning-layout-item size="12" padding="around-small">
+                    <lightning-input class="slds-m-bottom_small city-input" label="Enter City Name" value={city}
+                        onchange={handleCityChange} onblur={handleBlur}>
+                    </lightning-input>
+                    <template if:true={showSuggestions}>
+                        <div class="suggestions-dropdown">
+                            <template for:each={citySuggestions} for:item="suggestion">
+                                <div key={suggestion} class="suggestion-item" data-city={suggestion}
+                                    onclick={handleSuggestionClick}>
+                                    {suggestion}
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </lightning-layout-item>
+
+                <lightning-layout-item size="12" padding="around-small">
+                    <lightning-combobox name="units" label="Units" value={units} options={unitOptions}
+                        onchange={handleUnitsChange} class="slds-m-bottom_small">
+                    </lightning-combobox>
+                </lightning-layout-item>
+
+                <lightning-layout-item size="12" padding="around-small">
+                    <lightning-button class="slds-m-right_small" label="Get Weather"
+                        onclick={fetchWeather}></lightning-button>
+                    <lightning-button class="slds-m-left_small" label="Use Current Location"
+                        onclick={fetchWeatherByLocation}></lightning-button>
+                </lightning-layout-item>
+
+                <lightning-layout-item size="12" padding="around-small">
+                    <template if:true={isLoading}>
+                        <lightning-spinner alternative-text="Loading Weather..." size="medium"></lightning-spinner>
+                    </template>
+                </lightning-layout-item>
+
+                <template if:true={weatherData}>
+                    <lightning-layout-item size="12" padding="around-small">
+                        <div class="weather-data">
+                            <p><strong>City:</strong> {weatherData.current.name}</p>
+                            <p><strong>Temperature:</strong> {weatherData.current.main.temp}{unitSymbol}</p>
+                            <p><strong>Humidity:</strong> {weatherData.current.main.humidity}%</p>
+                            <p><strong>Wind Speed:</strong> {weatherData.current.wind.speed} {windUnit}</p>
+                            <p><strong>Weather:</strong> {weatherDescription}</p>
+                            <img class="weather-icon" src={weatherIconUrl} alt="Weather Icon" />
+                        </div>
+                    </lightning-layout-item>
+
+                    <div class="slds-grid slds-wrap slds-grid_align-space">
+                        <template for:each={processedDailyWeather} for:item="day">
+                            <div key={day.dt} class="slds-col slds-size_1-of-5 slds-p-around_small">
+                                <div class="forecast-day">
+                                    <p><strong>Date:</strong> {day.formattedDate}</p>
+                                    <p><strong>Min Temp:</strong> {day.temp.min}{unitSymbol}</p>
+                                    <p><strong>Max Temp:</strong> {day.temp.max}{unitSymbol}</p>
+                                    <p><strong>Weather:</strong> {day.weatherDescription}</p>
+                                    <img src={day.forecastIconUrl} alt="Weather Icon" />
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <lightning-layout-item size="12" padding="around-small">
+                    <template if:true={error}>
+                        <p class="slds-text-color_error">{error}</p>
+                    </template>
+                </lightning-layout-item>
+            </lightning-layout>
+        </lightning-card>
+    </div>
+</template>

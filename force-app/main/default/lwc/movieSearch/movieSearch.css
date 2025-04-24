@@ -1,0 +1,10 @@
+.filterStyle{
+    border: 2pd solid black;
+    border-radius: 5px;
+    background-color: whitesmoke;
+}
+
+.displayStyle{
+    height: 600px;
+    background-color: black;
+}

@@ -1,0 +1,33 @@
+<template>
+    <lightning-card title="Google Drive Integration">
+        <div class="slds-m-around_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading..."></lightning-spinner>
+            </template>
+
+            <template if:false={isAuthenticated}>
+                <lightning-button label="Connect Google Drive" onclick={handleConnect}
+                    disabled={isLoading}></lightning-button>
+            </template>
+
+            <template if:true={isAuthenticated}>
+                <h3 class="slds-text-heading_small slds-m-bottom_small">Files and Folders</h3>
+                <template for:each={files} for:item="file">
+                    <p key={file.id}>
+                        <lightning-icon icon-name={file.iconName} size="small"
+                            class="slds-m-right_small"></lightning-icon>
+                        {file.name} ({file.mimeType})
+                    </p>
+                </template>
+
+                <lightning-input label="Folder Name" value={folderName}
+                    onchange={handleFolderNameChange}></lightning-input>
+                <lightning-button label="Create Folder" class="slds-m-top_small" onclick={handleCreateFolder}
+                    disabled={isLoading}></lightning-button>
+
+                <lightning-file-upload label="Upload File" name="fileUploader" onuploadfinished={handleUploadFinished}
+                    multiple class="slds-m-top_medium" disabled={isLoading}></lightning-file-upload>
+            </template>
+        </div>
+    </lightning-card>
+</template>

@@ -1,0 +1,3 @@
+<apex:page controller="GoogleDriveRedirectHandler" action="{!processCode}" showHeader="false" sidebar="false">
+    <!-- No content needed -->
+</apex:page>
