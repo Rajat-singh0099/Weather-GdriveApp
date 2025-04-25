@@ -12,7 +12,12 @@ public with sharing class GoogleDriveController {
         HttpResponse res = http.send(req);
         if (res.getStatusCode() == 200) {
             Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-            return (List<Map<String, Object>>) result.get('files');
+            List<Object> rawFiles = (List<Object>) result.get('files');
+            List<Map<String, Object>> files = new List<Map<String, Object>>();
+            for (Object rawFile : rawFiles) {
+                files.add((Map<String, Object>) rawFile);
+            }
+            return files;
         } else {
             throw new AuraHandledException('Failed to list files: ' + res.getBody());
         }

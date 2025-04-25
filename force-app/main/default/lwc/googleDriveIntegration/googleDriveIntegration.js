@@ -96,7 +96,7 @@ export default class GoogleDriveIntegration extends LightningElement {
             const rawFiles = await listFiles({ accessToken: this.accessToken });
             this.files = rawFiles.map(file => ({
                 id: file.id,
-                name: file.name,
+                name: file.name, // Use only the name without appending mimeType
                 mimeType: file.mimeType,
                 iconName: file.mimeType === 'application/vnd.google-apps.folder' ? 'utility:open_folder' : 'utility:file'
             }));
