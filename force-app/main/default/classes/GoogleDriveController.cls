@@ -47,21 +47,64 @@ public with sharing class GoogleDriveController {
     }
 
     @AuraEnabled
-    public static String uploadFile(String accessToken, String fileName, String fileContent) {
-        Http http = new Http();
+    public static String initiateResumableUpload(String accessToken, String fileName, String mimeType) {
         HttpRequest req = new HttpRequest();
-        req.setEndpoint('https://www.googleapis.com/upload/drive/v3/files?uploadType=media');
+        req.setEndpoint('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable');
         req.setMethod('POST');
         req.setHeader('Authorization', 'Bearer ' + accessToken);
-        req.setHeader('Content-Type', 'application/octet-stream');
-        req.setBodyAsBlob(EncodingUtil.base64Decode(fileContent));
+        req.setHeader('Content-Type', 'application/json; charset=UTF-8');
+        req.setHeader('X-Upload-Content-Type', mimeType);
 
-        HttpResponse res = http.send(req);
-        if (res.getStatusCode() == 200) {
-            Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-            return (String) result.get('id');
+        Map<String, Object> metadata = new Map<String, Object>{
+            'name' => fileName,
+            'mimeType' => mimeType
+        };
+        req.setBody(JSON.serialize(metadata));
+
+        HttpResponse res = new Http().send(req);
+        System.debug('Initiate Upload Response: ' + res.getBody());
+
+        if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
+            return res.getHeader('Location'); // Upload URL for PUT request
         } else {
-            throw new AuraHandledException('Failed to upload file: ' + res.getBody());
+            throw new AuraHandledException('Failed to initiate resumable upload: ' + res.getBody());
+        }
+    }
+
+    @AuraEnabled
+    public static String uploadFileContent(String uploadUrl, String fileContentBase64) {
+        Blob fileBlob = EncodingUtil.base64Decode(fileContentBase64);
+
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(uploadUrl);
+        req.setMethod('PUT');
+        req.setHeader('Content-Type', 'application/octet-stream');
+        req.setHeader('Content-Length', String.valueOf(fileBlob.size()));
+        req.setBodyAsBlob(fileBlob);
+
+        HttpResponse res = new Http().send(req);
+        System.debug('Upload File Content Response: ' + res.getBody());
+
+        if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
+            return res.getBody();
+        } else {
+            throw new AuraHandledException('Failed to upload file content: ' + res.getBody());
+        }
+    }
+
+    @AuraEnabled
+    public static String fetchFileContent(String documentId) {
+        try {
+            ContentVersion cv = [
+                SELECT VersionData
+                FROM ContentVersion
+                WHERE ContentDocumentId = :documentId
+                ORDER BY CreatedDate DESC
+                LIMIT 1
+            ];
+            return EncodingUtil.base64Encode(cv.VersionData);
+        } catch (Exception e) {
+            throw new AuraHandledException('Failed to fetch file content: ' + e.getMessage());
         }
     }
 }
