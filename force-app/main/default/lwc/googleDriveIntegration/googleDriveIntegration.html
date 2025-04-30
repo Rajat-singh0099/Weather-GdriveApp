@@ -1,4 +1,3 @@
-
 <template>
     <lightning-card title="Google Drive Integration">
         <div class="slds-m-around_medium">
@@ -12,19 +11,37 @@
             </template>
 
             <template if:true={isAuthenticated}>
+                <template if:true={folderHistory.length}>
+                    <lightning-button label="Back" icon-name="utility:back" onclick={handleGoBack} class="slds-m-bottom_small">
+                    </lightning-button>
+                </template>
+                
                 <h3 class="slds-text-heading_small slds-m-bottom_small">Files and Folders</h3>
                 <template for:each={files} for:item="file">
                     <p key={file.id}>
                         <lightning-icon icon-name={file.iconName} size="small"
                             class="slds-m-right_small"></lightning-icon>
-                        {file.name}
+
+                        <template if:true={file.isFolder}>
+                            <span style="cursor:pointer; color: #0070d2; text-decoration: underline;" data-id={file.id}
+                                onclick={handleFolderClick}>
+                                {file.name}
+                            </span>
+                        </template>
+
+                        <template if:false={file.isFolder}>
+                            <span style="cursor:pointer; color: #333; text-decoration: underline;" data-id={file.id}
+                                onclick={handleFileClick}>
+                                {file.name}
+                            </span>
+                        </template>                        
                     </p>
                 </template>
 
-                <lightning-input label="Folder Name" value={folderName}
+                <lightning-input label="Folder Name" value={folderName} placeholder="Please enter folder name"
                     onchange={handleFolderNameChange}></lightning-input>
                 <lightning-button label="Create Folder" class="slds-m-top_small" onclick={handleCreateFolder}
-                    disabled={isLoading}></lightning-button>
+                    disabled={isCreateFolderDisabled}></lightning-button>
 
                 <lightning-file-upload label="Upload File" name="fileUploader" onuploadfinished={handleUploadFinished}
                     multiple class="slds-m-top_medium" disabled={isLoading}></lightning-file-upload>

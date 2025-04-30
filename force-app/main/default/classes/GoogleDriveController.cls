@@ -2,14 +2,21 @@ public with sharing class GoogleDriveController {
     private static final String DRIVE_API = 'https://www.googleapis.com/drive/v3';
 
     @AuraEnabled
-    public static List<Map<String, Object>> listFiles(String accessToken) {
-        Http http = new Http();
+    public static List<Map<String, Object>> listFiles(String accessToken, String parentFolderId) {
+        if (String.isBlank(parentFolderId)) {
+            parentFolderId = 'root';
+        }
+    
+        // Build the raw query
+        String rawQuery = '\'' + parentFolderId + '\' in parents and trashed=false';
+        String encodedQuery = EncodingUtil.urlEncode(rawQuery, 'UTF-8');
+    
         HttpRequest req = new HttpRequest();
-        req.setEndpoint(DRIVE_API + '/files?q=\'root\'+in+parents&fields=files(id,name,mimeType)');
+        req.setEndpoint(DRIVE_API + '/files?q=' + encodedQuery + '&fields=files(id,name,mimeType,parents)');
         req.setMethod('GET');
         req.setHeader('Authorization', 'Bearer ' + accessToken);
-
-        HttpResponse res = http.send(req);
+    
+        HttpResponse res = new Http().send(req);
         if (res.getStatusCode() == 200) {
             Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             List<Object> rawFiles = (List<Object>) result.get('files');
@@ -21,7 +28,7 @@ public with sharing class GoogleDriveController {
         } else {
             throw new AuraHandledException('Failed to list files: ' + res.getBody());
         }
-    }
+    }           
 
     @AuraEnabled
     public static String createFolder(String accessToken, String folderName) {
@@ -37,7 +44,11 @@ public with sharing class GoogleDriveController {
         });
         req.setBody(body);
 
+        System.debug('Create Folder Request: ' + req);
+
         HttpResponse res = http.send(req);
+        System.debug('Create Folder Response: Status=' + res.getStatusCode() + ', Body=' + res.getBody());
+
         if (res.getStatusCode() == 200) {
             Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             return (String) result.get('id');
