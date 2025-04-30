@@ -12,43 +12,59 @@
 
             <template if:true={isAuthenticated}>
 
-                <p class="slds-text-title slds-m-bottom_small">
-                    <strong>Current Folder:</strong> {currentFolderName}
-                </p>
+                <!-- 📁 Breadcrumb Navigation with Inline Back Icon -->
+                <div class="slds-m-bottom_small slds-grid slds-align-center slds-wrap">
+                    <lightning-button-icon
+                        icon-name="utility:back"
+                        variant="bare"
+                        alternative-text="Back"
+                        title="Back"
+                        onclick={handleGoBack}
+                        class="slds-m-right_x-small">
+                    </lightning-button-icon>
 
-                <template if:true={folderHistory.length}>
-                    <lightning-button label="Back" icon-name="utility:back" onclick={handleGoBack}
-                        class="slds-m-bottom_small">
-                    </lightning-button>
-                </template>
+                    <div class="slds-text-title_bold">
+                        <template for:each={processedBreadcrumbTrail} for:item="crumb">
+                            <span key={crumb.id}>
+                                <a style="cursor:pointer;" data-id={crumb.id} onclick={handleBreadcrumbClick}>
+                                    {crumb.name}
+                                </a>
+                                <template if:false={crumb.isLast}>
+                                    <span> / </span>
+                                </template>
+                            </span>
+                        </template>
+                    </div>
+                </div>
 
                 <h3 class="slds-text-heading_small slds-m-bottom_small">Files and Folders</h3>
                 <template for:each={files} for:item="file">
                     <div key={file.id} class="slds-m-bottom_x-small slds-grid slds-align-start">
-                        <lightning-icon icon-name={file.iconName} size="small" class="slds-m-right_small"></lightning-icon>
-                
+                        <lightning-icon icon-name={file.iconName} size="small"
+                            class="slds-m-right_small"></lightning-icon>
+
                         <div class="slds-truncate" style="max-width: 80%;">
                             <template if:true={file.isFolder}>
-                                <span style="cursor:pointer; color: #0070d2; text-decoration: underline;" data-id={file.id}
-                                    onclick={handleFolderClick}>
+                                <span style="cursor:pointer; color: #0070d2; text-decoration: underline;"
+                                    data-id={file.id} data-name={file.name} onclick={handleFolderClick}>
                                     {file.name}
                                 </span>
                             </template>
-                
+
                             <template if:false={file.isFolder}>
                                 <span style="cursor:pointer; color: #333; text-decoration: underline;" data-id={file.id}
-                                    onclick={handleFileClick}>
+                                    data-name={file.name} onclick={handleFileClick}>
                                     {file.name}
                                 </span>
                             </template>
                         </div>
-                
+
                         <lightning-button-icon icon-name="utility:delete" variant="bare" alternative-text="Delete"
                             title="Delete" data-id={file.id} data-name={file.name} onclick={handleDelete}
                             class="slds-m-left_x-small">
                         </lightning-button-icon>
                     </div>
-                </template>                
+                </template>
 
                 <lightning-input label="Folder Name" value={folderName} placeholder="Please enter folder name"
                     onchange={handleFolderNameChange}></lightning-input>

@@ -21,6 +21,10 @@ export default class GoogleDriveIntegration extends LightningElement {
     @track currentFolderId = 'root';
     @track folderHistory = [];
     @track currentFolderName = 'My Drive';
+    @track breadcrumbTrail = [
+        { id: 'root', name: 'My Drive' }
+    ];
+    
 
     connectedCallback() {
         this.isLoading = true;
@@ -140,19 +144,47 @@ export default class GoogleDriveIntegration extends LightningElement {
 
     handleFolderClick(event) {
         const folderId = event.target.dataset.id;
-        if (folderId) {
-            this.folderHistory.push(this.currentFolderId); // Save current before moving
+        const folderName = event.target.dataset.name;
+    
+        if (folderId && folderName) {
+            this.folderHistory.push(this.currentFolderId); // maintain back stack
             this.currentFolderId = folderId;
+    
+            // Add new level to breadcrumb
+            this.breadcrumbTrail.push({ id: folderId, name: folderName });
+    
             this.loadFiles();
         }
+    }        
+
+    handleBreadcrumbClick(event) {
+        const folderId = event.target.dataset.id;
+    
+        if (!folderId || folderId === this.currentFolderId) return;
+    
+        // Trim breadcrumb trail to clicked item
+        const index = this.breadcrumbTrail.findIndex(b => b.id === folderId);
+        this.breadcrumbTrail = this.breadcrumbTrail.slice(0, index + 1);
+    
+        this.folderHistory.push(this.currentFolderId);
+        this.currentFolderId = folderId;
+        this.loadFiles();
     }    
 
     handleGoBack() {
         if (this.folderHistory.length > 0) {
-            this.currentFolderId = this.folderHistory.pop(); // Go to previous folder
+            const previousFolderId = this.folderHistory.pop();
+            this.currentFolderId = previousFolderId;
+    
+            // Remove the last breadcrumb to reflect the step back
+            if (this.breadcrumbTrail.length > 1) {
+                this.breadcrumbTrail.pop();
+            }
+    
             this.loadFiles();
         }
-    }    
+    }
+       
 
     handleFileClick(event) {
         const fileId = event.target.dataset.id;
@@ -209,5 +241,12 @@ export default class GoogleDriveIntegration extends LightningElement {
     get isCreateFolderDisabled() {
         return this.isLoading || !this.folderName || this.folderName.trim() === '';
     }
-    
+
+    get processedBreadcrumbTrail() {
+        return this.breadcrumbTrail.map((crumb, index) => ({
+            ...crumb,
+            isLast: index === this.breadcrumbTrail.length - 1
+        }));
+    }
+     
 }
