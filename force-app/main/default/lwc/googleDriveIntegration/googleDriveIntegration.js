@@ -7,6 +7,8 @@ import fetchFileContent from '@salesforce/apex/GoogleDriveController.fetchFileCo
 import listFiles from '@salesforce/apex/GoogleDriveController.listFiles';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import createFolder from '@salesforce/apex/GoogleDriveController.createFolder';
+import getFolderName from '@salesforce/apex/GoogleDriveController.getFolderName';
+import deleteFileOrFolder from '@salesforce/apex/GoogleDriveController.deleteFileOrFolder';
 
 export default class GoogleDriveIntegration extends LightningElement {
     @track isAuthenticated = false;
@@ -18,6 +20,7 @@ export default class GoogleDriveIntegration extends LightningElement {
     @track uploadProgress = 0;
     @track currentFolderId = 'root';
     @track folderHistory = [];
+    @track currentFolderName = 'My Drive';
 
     connectedCallback() {
         this.isLoading = true;
@@ -55,8 +58,9 @@ export default class GoogleDriveIntegration extends LightningElement {
                 const uploadUrl = await initiateResumableUpload({
                     accessToken: this.accessToken,
                     fileName: file.name,
-                    mimeType: mimeType
-                });
+                    mimeType: mimeType,
+                    parentFolderId: this.currentFolderId
+                });                
 
                 // Step 2: Upload file content
                 await uploadFileContent({
@@ -74,6 +78,33 @@ export default class GoogleDriveIntegration extends LightningElement {
             this.isLoading = false;
         }
     }
+
+    async handleDelete(event) {
+        const fileId = event.target.dataset.id;
+        const fileName = event.target.dataset.name;
+    
+        if (!fileId) return;
+    
+        if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+            return;
+        }
+    
+        this.isLoading = true;
+        try {
+            await deleteFileOrFolder({
+                accessToken: this.accessToken,
+                fileId: fileId
+            });
+            this.showToast('Success', `"${fileName}" deleted`, 'success');
+            await this.loadFiles(); // Refresh file list
+        } catch (error) {
+            console.error('Delete failed:', error);
+            this.showToast('Error', 'Delete failed', 'error');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+    
 
     async readFileBase64(documentId) {
         try {
@@ -96,6 +127,12 @@ export default class GoogleDriveIntegration extends LightningElement {
                 mimeType: file.mimeType,
                 iconName: file.mimeType === 'application/vnd.google-apps.folder' ? 'utility:open_folder' : 'utility:file'
             })));
+
+            this.currentFolderName = await getFolderName({
+                accessToken: this.accessToken,
+                folderId: this.currentFolderId
+            });
+            
         } catch (error) {
             this.showToast('Error', 'Failed to load files', 'error');
         }
@@ -138,8 +175,9 @@ export default class GoogleDriveIntegration extends LightningElement {
 
             const folderId = await createFolder({
                 accessToken: this.accessToken,
-                folderName: this.folderName
-            });
+                folderName: this.folderName,
+                parentFolderId: this.currentFolderId
+            });            
 
             console.log('Folder created successfully with ID:', folderId);
             this.showToast('Success', 'Folder created successfully', 'success');

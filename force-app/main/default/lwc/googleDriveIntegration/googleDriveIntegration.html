@@ -11,32 +11,44 @@
             </template>
 
             <template if:true={isAuthenticated}>
+
+                <p class="slds-text-title slds-m-bottom_small">
+                    <strong>Current Folder:</strong> {currentFolderName}
+                </p>
+
                 <template if:true={folderHistory.length}>
-                    <lightning-button label="Back" icon-name="utility:back" onclick={handleGoBack} class="slds-m-bottom_small">
+                    <lightning-button label="Back" icon-name="utility:back" onclick={handleGoBack}
+                        class="slds-m-bottom_small">
                     </lightning-button>
                 </template>
-                
+
                 <h3 class="slds-text-heading_small slds-m-bottom_small">Files and Folders</h3>
                 <template for:each={files} for:item="file">
-                    <p key={file.id}>
-                        <lightning-icon icon-name={file.iconName} size="small"
-                            class="slds-m-right_small"></lightning-icon>
-
-                        <template if:true={file.isFolder}>
-                            <span style="cursor:pointer; color: #0070d2; text-decoration: underline;" data-id={file.id}
-                                onclick={handleFolderClick}>
-                                {file.name}
-                            </span>
-                        </template>
-
-                        <template if:false={file.isFolder}>
-                            <span style="cursor:pointer; color: #333; text-decoration: underline;" data-id={file.id}
-                                onclick={handleFileClick}>
-                                {file.name}
-                            </span>
-                        </template>                        
-                    </p>
-                </template>
+                    <div key={file.id} class="slds-m-bottom_x-small slds-grid slds-align-start">
+                        <lightning-icon icon-name={file.iconName} size="small" class="slds-m-right_small"></lightning-icon>
+                
+                        <div class="slds-truncate" style="max-width: 80%;">
+                            <template if:true={file.isFolder}>
+                                <span style="cursor:pointer; color: #0070d2; text-decoration: underline;" data-id={file.id}
+                                    onclick={handleFolderClick}>
+                                    {file.name}
+                                </span>
+                            </template>
+                
+                            <template if:false={file.isFolder}>
+                                <span style="cursor:pointer; color: #333; text-decoration: underline;" data-id={file.id}
+                                    onclick={handleFileClick}>
+                                    {file.name}
+                                </span>
+                            </template>
+                        </div>
+                
+                        <lightning-button-icon icon-name="utility:delete" variant="bare" alternative-text="Delete"
+                            title="Delete" data-id={file.id} data-name={file.name} onclick={handleDelete}
+                            class="slds-m-left_x-small">
+                        </lightning-button-icon>
+                    </div>
+                </template>                
 
                 <lightning-input label="Folder Name" value={folderName} placeholder="Please enter folder name"
                     onchange={handleFolderNameChange}></lightning-input>

@@ -31,25 +31,26 @@ public with sharing class GoogleDriveController {
     }           
 
     @AuraEnabled
-    public static String createFolder(String accessToken, String folderName) {
-        Http http = new Http();
+    public static String createFolder(String accessToken, String folderName, String parentFolderId) {
         HttpRequest req = new HttpRequest();
         req.setEndpoint(DRIVE_API + '/files');
         req.setMethod('POST');
         req.setHeader('Authorization', 'Bearer ' + accessToken);
         req.setHeader('Content-Type', 'application/json');
-        String body = JSON.serialize(new Map<String, Object>{
+
+        Map<String, Object> bodyMap = new Map<String, Object>{
             'name' => folderName,
             'mimeType' => 'application/vnd.google-apps.folder'
-        });
-        req.setBody(body);
+        };
 
-        System.debug('Create Folder Request: ' + req);
+        if (!String.isBlank(parentFolderId)) {
+            bodyMap.put('parents', new List<String>{ parentFolderId });
+        }
 
-        HttpResponse res = http.send(req);
-        System.debug('Create Folder Response: Status=' + res.getStatusCode() + ', Body=' + res.getBody());
+        req.setBody(JSON.serialize(bodyMap));
 
-        if (res.getStatusCode() == 200) {
+        HttpResponse res = new Http().send(req);
+        if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
             Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             return (String) result.get('id');
         } else {
@@ -58,7 +59,24 @@ public with sharing class GoogleDriveController {
     }
 
     @AuraEnabled
-    public static String initiateResumableUpload(String accessToken, String fileName, String mimeType) {
+    public static void deleteFileOrFolder(String accessToken, String fileId) {
+        if (String.isBlank(fileId)) {
+            throw new AuraHandledException('File ID cannot be blank.');
+        }
+
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(DRIVE_API + '/files/' + fileId);
+        req.setMethod('DELETE');
+        req.setHeader('Authorization', 'Bearer ' + accessToken);
+
+        HttpResponse res = new Http().send(req);
+        if (res.getStatusCode() != 204) { // 204 means "No Content" – success
+            throw new AuraHandledException('Failed to delete: ' + res.getBody());
+        }
+    }
+
+    @AuraEnabled
+    public static String initiateResumableUpload(String accessToken, String fileName, String mimeType, String parentFolderId) {
         HttpRequest req = new HttpRequest();
         req.setEndpoint('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable');
         req.setMethod('POST');
@@ -70,6 +88,11 @@ public with sharing class GoogleDriveController {
             'name' => fileName,
             'mimeType' => mimeType
         };
+        
+        if (!String.isBlank(parentFolderId)) {
+            metadata.put('parents', new List<String>{ parentFolderId });
+        }        
+        
         req.setBody(JSON.serialize(metadata));
 
         HttpResponse res = new Http().send(req);
@@ -118,4 +141,25 @@ public with sharing class GoogleDriveController {
             throw new AuraHandledException('Failed to fetch file content: ' + e.getMessage());
         }
     }
+
+    @AuraEnabled
+    public static String getFolderName(String accessToken, String folderId) {
+        if (String.isBlank(folderId) || folderId == 'root') {
+            return 'My Drive';
+        }
+
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(DRIVE_API + '/files/' + folderId + '?fields=name');
+        req.setMethod('GET');
+        req.setHeader('Authorization', 'Bearer ' + accessToken);
+
+        HttpResponse res = new Http().send(req);
+        if (res.getStatusCode() == 200) {
+            Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            return (String) result.get('name');
+        } else {
+            throw new AuraHandledException('Failed to fetch folder name: ' + res.getBody());
+        }
+    }
+
 }
