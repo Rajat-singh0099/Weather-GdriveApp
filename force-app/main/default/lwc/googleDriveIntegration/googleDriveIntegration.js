@@ -24,7 +24,9 @@ export default class GoogleDriveIntegration extends LightningElement {
     @track breadcrumbTrail = [
         { id: 'root', name: 'My Drive' }
     ];
-    
+    @track previewUrl = null;
+    @track previewMimeType = null;
+    @track previewName = null;
 
     connectedCallback() {
         this.isLoading = true;
@@ -99,17 +101,22 @@ export default class GoogleDriveIntegration extends LightningElement {
                 accessToken: this.accessToken,
                 fileId: fileId
             });
+    
+            // 🚨 If user was previewing this file, close preview
+            if (this.previewUrl && this.previewUrl.includes(fileId)) {
+                this.handleClosePreview();
+            }
+    
             this.showToast('Success', `"${fileName}" deleted`, 'success');
-            await this.loadFiles(); // Refresh file list
+            await this.loadFiles();
         } catch (error) {
             console.error('Delete failed:', error);
             this.showToast('Error', 'Delete failed', 'error');
         } finally {
             this.isLoading = false;
         }
-    }
+    }    
     
-
     async readFileBase64(documentId) {
         try {
             return await fetchFileContent({ documentId });
@@ -188,10 +195,34 @@ export default class GoogleDriveIntegration extends LightningElement {
 
     handleFileClick(event) {
         const fileId = event.target.dataset.id;
-        if (fileId) {
-            const fileUrl = `https://drive.google.com/file/d/${fileId}/view`;
-            window.open(fileUrl, '_blank');
+        const fileName = event.target.dataset.name;
+    
+        // Previewable file types
+        const file = this.files.find(f => f.id === fileId);
+        const mimeType = file?.mimeType;
+    
+        const supportedTypes = [
+            'application/pdf',
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'video/mp4'
+        ];
+    
+        if (supportedTypes.includes(mimeType)) {
+            this.previewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+            this.previewMimeType = mimeType;
+            this.previewName = fileName;
+        } else {
+            // Open externally for unsupported types
+            window.open(`https://drive.google.com/file/d/${fileId}/view`, '_blank');
         }
+    }
+    
+    handleClosePreview() {
+        this.previewUrl = null;
+        this.previewMimeType = null;
+        this.previewName = null;
     }
     
 

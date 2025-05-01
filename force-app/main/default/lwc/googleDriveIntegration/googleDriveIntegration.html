@@ -14,13 +14,8 @@
 
                 <!-- 📁 Breadcrumb Navigation with Inline Back Icon -->
                 <div class="slds-m-bottom_small slds-grid slds-align-center slds-wrap">
-                    <lightning-button-icon
-                        icon-name="utility:back"
-                        variant="bare"
-                        alternative-text="Back"
-                        title="Back"
-                        onclick={handleGoBack}
-                        class="slds-m-right_x-small">
+                    <lightning-button-icon icon-name="utility:back" variant="bare" alternative-text="Back" title="Back"
+                        onclick={handleGoBack} class="slds-m-right_x-small">
                     </lightning-button-icon>
 
                     <div class="slds-text-title_bold">
@@ -63,6 +58,24 @@
                             title="Delete" data-id={file.id} data-name={file.name} onclick={handleDelete}
                             class="slds-m-left_x-small">
                         </lightning-button-icon>
+                    </div>
+                </template>
+
+                <!-- 🔍 Inline Preview Panel -->
+                <template if:true={previewUrl}>
+                    <div class="slds-box slds-m-top_medium slds-theme_default">
+                        <div class="slds-grid slds-grid_align-spread slds-m-bottom_small">
+                            <strong>Preview: {previewName}</strong>
+                            <lightning-button-icon icon-name="utility:close" variant="bare"
+                                alternative-text="Close Preview" title="Close" onclick={handleClosePreview}>
+                            </lightning-button-icon>
+                        </div>
+
+                        <!-- PDF / Image / Video Preview -->
+                        <template if:true={previewMimeType}>
+                            <iframe src={previewUrl} width="100%" height="480px" frameborder="0" allowfullscreen>
+                            </iframe>
+                        </template>
                     </div>
                 </template>
 
